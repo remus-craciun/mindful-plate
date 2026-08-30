@@ -1,0 +1,19 @@
+{
+    email {$ACME_EMAIL:admin@example.com}
+}
+
+{$DOMAIN_NAME:localhost} {
+    # Reverse proxy to the Bun Fastify container
+    reverse_proxy api:3000
+
+    # Enable compression
+    encode gzip zstd
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}

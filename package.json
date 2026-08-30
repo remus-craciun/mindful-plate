@@ -1,0 +1,26 @@
+{
+  "name": "mindful-plate",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "bun --filter '*' typecheck",
+    "dev:server": "bun --filter @mindful-plate/server dev",
+    "dev:mobile": "bun --filter @mindful-plate/mobile dev",
+    "db:generate": "bun --filter @mindful-plate/server db:generate",
+    "db:migrate": "bun --filter @mindful-plate/server db:migrate",
+    "db:push": "bun --filter @mindful-plate/server db:push",
+    "db:seed": "bun --filter @mindful-plate/server db:seed"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/plugin-transform-react-jsx": "^7.24.7",
+    "babel-preset-expo": "~57.0.9",
+    "nativewind": "^4.1.23",
+    "typescript": "^5.7.3"
+  }
+}

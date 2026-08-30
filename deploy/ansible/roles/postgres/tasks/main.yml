@@ -1,0 +1,47 @@
+---
+- name: Install native PostgreSQL packages and python psycopg2
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - python3-psycopg2
+    state: present
+    update_cache: yes
+
+- name: Ensure PostgreSQL service is started and enabled
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create PostgreSQL database user
+  postgresql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    role_attr_flags: "CREATEDB"
+  become: yes
+  become_user: postgres
+
+- name: Create PostgreSQL database
+  postgresql_db:
+    name: "{{ db_name }}"
+    owner: "{{ db_user }}"
+  become: yes
+  become_user: postgres
+
+- name: Allow Docker network / host connections to PostgreSQL
+  lineinfile:
+    path: /etc/postgresql/{{ pg_version | default('16') }}/main/pg_hba.conf
+    line: "host    {{ db_name }}    {{ db_user }}    172.17.0.0/16    scram-sha-256"
+    state: present
+  notify: Restart PostgreSQL
+  ignore_errors: yes
+
+- name: Configure PostgreSQL listen addresses to localhost and docker interface
+  lineinfile:
+    path: /etc/postgresql/{{ pg_version | default('16') }}/main/postgresql.conf
+    regexp: "^#?listen_addresses\\s*="
+    line: "listen_addresses = '*'"
+    state: present
+  notify: Restart PostgreSQL
+  ignore_errors: yes

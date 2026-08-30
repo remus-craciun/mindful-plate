@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Build output
+dist
+web-build
+*.tsbuildinfo
+
+# Expo / Metro
+.expo
+expo-env.d.ts
+
+# Native (Expo prebuild output & signing credentials)
+ios
+android
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Editor
+.vscode
+.idea
+
+# OS
+.DS_Store

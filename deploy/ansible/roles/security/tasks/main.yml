@@ -1,0 +1,34 @@
+---
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present
+
+- name: Allow SSH (Port 22)
+  ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Allow HTTP (Port 80)
+  ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+
+- name: Allow HTTPS (Port 443)
+  ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+
+- name: Allow local subnet access to Fastify port 3000 (optional dev)
+  ufw:
+    rule: allow
+    port: '3000'
+    proto: tcp
+
+- name: Enable UFW firewall
+  ufw:
+    state: enabled
+    policy: deny

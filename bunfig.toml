@@ -1,0 +1,5 @@
+[install]
+# Metro can't resolve through Bun's default isolated (pnpm-style) node_modules
+# layout, so transitive deps like react-native-css-interop go missing at bundle
+# time. Expo/React Native needs a flat, hoisted node_modules tree.
+linker = "hoisted"

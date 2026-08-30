@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Mindful Plate",
+    "slug": "mindful-plate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#10b981"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Mindful Plate needs camera access to analyze meal photos for nutrition."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mindful Plate needs photo library access to upload meal images."
+        }
+      ],
+      "expo-sqlite"
+    ],
+    "scheme": "mindfulplate"
+  }
+}

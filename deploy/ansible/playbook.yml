@@ -1,0 +1,21 @@
+---
+- name: Deploy Mindful Plate to Raspberry Pi
+  hosts: raspberrypi
+  become: yes
+  vars:
+    app_env: "{{ env | default('production') }}"
+    compose_file: "{{ 'docker-compose.prod.yml' if (app_env == 'production') else 'docker-compose.dev.yml' }}"
+    app_dir: "/home/{{ ansible_user }}/mindful-plate"
+    db_user: "mindful_user"
+    db_password: "mindful_secure_password_replace_me"
+    db_name: "mindful_plate"
+    jwt_secret: "super_secure_mindful_plate_jwt_key_at_least_32_chars!"
+    gemini_api_key: "{{ lookup('env', 'GEMINI_API_KEY') | default('') }}"
+    domain_name: "mindful.local"
+    acme_email: "admin@example.com"
+
+  roles:
+    - security
+    - postgres
+    - docker
+    - app
