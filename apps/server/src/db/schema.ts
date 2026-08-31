@@ -5,7 +5,7 @@ export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const userProfiles = pgTable('user_profiles', {
@@ -22,7 +22,7 @@ export const userProfiles = pgTable('user_profiles', {
   dailyCarbsTargetG: integer('daily_carbs_target_g').notNull(),
   dailyFatTargetG: integer('daily_fat_target_g').notNull(),
   dailyWaterTargetMl: integer('daily_water_target_ml').notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const foods = pgTable('foods', {
@@ -38,7 +38,7 @@ export const foods = pgTable('foods', {
   fiber: doublePrecision('fiber').default(0),
   isCustom: boolean('is_custom').default(false).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const mealLogs = pgTable('meal_logs', {
@@ -47,7 +47,7 @@ export const mealLogs = pgTable('meal_logs', {
   mealType: varchar('meal_type', { length: 20 }).notNull(), // 'breakfast' | 'lunch' | 'dinner' | 'snack'
   date: date('date').notNull(), // YYYY-MM-DD
   notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const mealItems = pgTable('meal_items', {
@@ -69,7 +69,7 @@ export const waterLogs = pgTable('water_logs', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   amountMl: integer('amount_ml').notNull(),
-  loggedAt: timestamp('logged_at').defaultNow().notNull(),
+  loggedAt: timestamp('logged_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const recipes = pgTable('recipes', {
@@ -82,7 +82,7 @@ export const recipes = pgTable('recipes', {
   proteinPerServing: doublePrecision('protein_per_serving').notNull().default(0),
   carbsPerServing: doublePrecision('carbs_per_serving').notNull().default(0),
   fatPerServing: doublePrecision('fat_per_serving').notNull().default(0),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const recipeIngredients = pgTable('recipe_ingredients', {

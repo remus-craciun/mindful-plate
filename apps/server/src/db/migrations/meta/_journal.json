@@ -15,6 +15,13 @@
       "when": 1788162207187,
       "tag": "0001_seed_common_foods",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788169875215,
+      "tag": "0002_fine_bulldozer",
+      "breakpoints": true
     }
   ]
 }
