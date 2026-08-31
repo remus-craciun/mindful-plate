@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Plus, Trash2, Utensils } from 'lucide-react-native';
+import { Plus, X, Utensils } from 'lucide-react-native';
 
 interface MealSectionProps {
   title: string;
@@ -58,7 +58,7 @@ export function MealSection({ title, items, onAddItem, onDeleteItem }: MealSecti
                     onPress={() => onDeleteItem(item.id)}
                     className="p-1 active:opacity-60"
                   >
-                    <Trash2 size={14} color="#ef4444" />
+                    <X size={14} color="#ef4444" />
                   </TouchableOpacity>
                 )}
               </View>

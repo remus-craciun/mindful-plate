@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAuthToken } from '../services/api';
+import { getLocalDateKey } from '../utils/date';
 
 const TOKEN_STORAGE_KEY = '@mindful_plate_jwt_token';
 const USER_STORAGE_KEY = '@mindful_plate_user_data';
@@ -23,7 +24,7 @@ export const useStore = create<AppState>((set) => ({
   user: null,
   profile: null,
   isHydrated: false,
-  selectedDate: new Date().toISOString().split('T')[0],
+  selectedDate: getLocalDateKey(),
 
   hydrateAuth: async () => {
     try {

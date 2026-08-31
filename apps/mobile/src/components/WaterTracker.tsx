@@ -1,15 +1,26 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Droplet, Plus } from 'lucide-react-native';
+import { Droplet, Plus, X } from 'lucide-react-native';
+
+interface WaterLogEntry {
+  id: string;
+  amountMl: number;
+  loggedAt: string;
+}
 
 interface WaterTrackerProps {
   currentMl: number;
   targetMl: number;
+  logs: WaterLogEntry[];
   onAddWater: (amountMl: number) => void;
+  onDeleteLog: (id: string) => void;
 }
 
-export function WaterTracker({ currentMl, targetMl, onAddWater }: WaterTrackerProps) {
+export function WaterTracker({ currentMl, targetMl, logs, onAddWater, onDeleteLog }: WaterTrackerProps) {
   const percentage = Math.min(100, Math.round((currentMl / (targetMl || 2500)) * 100));
+  const sortedLogs = [...logs].sort(
+    (a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+  );
 
   return (
     <View className="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 mb-5">
@@ -28,9 +39,9 @@ export function WaterTracker({ currentMl, targetMl, onAddWater }: WaterTrackerPr
 
       {/* Progress bar */}
       <View className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mb-4">
-        <View 
-          className="h-full bg-sky-500 rounded-full" 
-          style={{ width: `${percentage}%` }} 
+        <View
+          className="h-full bg-sky-500 rounded-full"
+          style={{ width: `${percentage}%` }}
         />
       </View>
 
@@ -60,6 +71,29 @@ export function WaterTracker({ currentMl, targetMl, onAddWater }: WaterTrackerPr
           <Text className="text-sky-400 font-semibold text-xs ml-1">750 ml</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Individual Entries */}
+      {sortedLogs.length > 0 && (
+        <View className="mt-4 pt-4 border-t border-slate-800">
+          {sortedLogs.map((log) => (
+            <View
+              key={log.id}
+              className="flex-row items-center justify-between py-1.5"
+            >
+              <View className="flex-row items-center">
+                <Droplet size={12} color="#0ea5e9" />
+                <Text className="text-slate-300 text-xs font-medium ml-2">{log.amountMl} ml</Text>
+                <Text className="text-slate-500 text-xs ml-2">
+                  {new Date(log.loggedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => onDeleteLog(log.id)} className="p-1 active:opacity-60">
+                <X size={14} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }

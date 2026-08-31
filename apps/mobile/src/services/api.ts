@@ -5,6 +5,7 @@ import {
   AiMealAnalysisResult,
   FoodItemDto,
 } from '@mindful-plate/shared';
+import { getLocalDateKey } from '../utils/date';
 
 // Configurable backend URL: defaults to localhost:3000 for simulator or local dev
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
@@ -136,8 +137,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({
         amountMl,
-        date: date || new Date().toISOString().split('T')[0],
+        date: date || getLocalDateKey(),
       }),
+    }),
+
+  deleteWaterLog: (id: string) =>
+    request<{ success: boolean }>(`/api/water/${id}`, {
+      method: 'DELETE',
     }),
 
   // Foods

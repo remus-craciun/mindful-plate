@@ -9,6 +9,7 @@ import { MealSection } from '../../src/components/MealSection';
 import { useStore } from '../../src/store/useStore';
 import { api } from '../../src/services/api';
 import { MealType } from '@mindful-plate/shared';
+import { getLocalDateKey, shiftDateKey } from '../../src/utils/date';
 
 interface DailyItem {
   id: string;
@@ -32,18 +33,8 @@ const MEAL_LABELS: Record<MealType, string> = {
 
 const EMPTY_MEALS: Record<MealType, DailyItem[]> = { breakfast: [], lunch: [], dinner: [], snack: [] };
 
-function toDateKey(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
-
-function shiftDateKey(dateKey: string, days: number): string {
-  const d = new Date(`${dateKey}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return toDateKey(d);
-}
-
 function formatDateLabel(dateKey: string): string {
-  const todayKey = toDateKey(new Date());
+  const todayKey = getLocalDateKey();
   if (dateKey === todayKey) return 'Today';
   if (dateKey === shiftDateKey(todayKey, -1)) return 'Yesterday';
   return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, {
@@ -56,7 +47,7 @@ function formatDateLabel(dateKey: string): string {
 export default function DashboardScreen() {
   const router = useRouter();
   const { selectedDate, setSelectedDate } = useStore();
-  const todayKey = toDateKey(new Date());
+  const todayKey = getLocalDateKey();
   const isToday = selectedDate === todayKey;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,6 +60,7 @@ export default function DashboardScreen() {
   const [mealsByType, setMealsByType] = useState<Record<MealType, DailyItem[]>>(EMPTY_MEALS);
   const [waterMl, setWaterMl] = useState(0);
   const [waterTargetMl, setWaterTargetMl] = useState(2500);
+  const [waterLogs, setWaterLogs] = useState<{ id: string; amountMl: number; loggedAt: string }[]>([]);
 
   const loadDashboard = useCallback(async () => {
     const [dailyRes, waterRes] = await Promise.all([
@@ -89,6 +81,7 @@ export default function DashboardScreen() {
     setMealsByType(grouped);
     setWaterMl(waterRes.totalMl);
     setWaterTargetMl(waterRes.targetMl);
+    setWaterLogs(waterRes.logs);
   }, [selectedDate]);
 
   // Reload every time this tab is focused (initial mount, switching back from
@@ -128,6 +121,15 @@ export default function DashboardScreen() {
     } catch (err: any) {
       setWaterMl(previousMl);
       Alert.alert('Could not log water', err.message || 'Please try again.');
+    }
+  };
+
+  const handleDeleteWaterLog = async (id: string) => {
+    try {
+      await api.deleteWaterLog(id);
+      await loadDashboard();
+    } catch (err: any) {
+      Alert.alert('Could not delete', err.message || 'Please try again.');
     }
   };
 
@@ -267,13 +269,6 @@ export default function DashboardScreen() {
           />
         </View>
 
-        {/* Water Tracker */}
-        <WaterTracker
-          currentMl={waterMl}
-          targetMl={waterTargetMl}
-          onAddWater={handleAddWater}
-        />
-
         {/* Meals by Type */}
         <Text className="text-white text-lg font-bold mb-3">Logged Meals</Text>
         {MEAL_TYPES.map((type) => (
@@ -285,6 +280,15 @@ export default function DashboardScreen() {
             onDeleteItem={handleDeleteItem}
           />
         ))}
+
+        {/* Water Tracker */}
+        <WaterTracker
+          currentMl={waterMl}
+          targetMl={waterTargetMl}
+          logs={waterLogs}
+          onAddWater={handleAddWater}
+          onDeleteLog={handleDeleteWaterLog}
+        />
 
         <View className="h-10" />
       </ScrollView>

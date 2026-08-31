@@ -57,4 +57,20 @@ export const waterRoutes: FastifyPluginAsync = async (fastify) => {
 
     return reply.status(201).send({ log: newLog });
   });
+
+  // Delete a single water log entry
+  fastify.delete('/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = (request.user as { id: string }).id;
+
+    const deleted = await db.delete(waterLogs)
+      .where(and(eq(waterLogs.id, id), eq(waterLogs.userId, userId)))
+      .returning();
+
+    if (deleted.length === 0) {
+      return reply.status(404).send({ error: 'Water log not found' });
+    }
+
+    return reply.send({ success: true });
+  });
 };
