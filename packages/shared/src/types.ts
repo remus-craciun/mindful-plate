@@ -63,3 +63,20 @@ export interface AiMealAnalysisResult {
   confidence: 'low' | 'medium' | 'high';
   notes?: string;
 }
+
+export interface RecipeIngredientDto {
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface AiRecipeAnalysisResult {
+  title: string;
+  servings: number;
+  instructions?: string;
+  ingredients: RecipeIngredientDto[];
+}

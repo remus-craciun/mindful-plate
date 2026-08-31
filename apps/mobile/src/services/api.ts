@@ -3,6 +3,7 @@ import {
   CalculatedTargets,
   ParsedMealItem,
   AiMealAnalysisResult,
+  AiRecipeAnalysisResult,
   FoodItemDto,
 } from '@mindful-plate/shared';
 
@@ -183,10 +184,21 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(recipe),
     }),
+  deleteRecipe: (id: string) =>
+    request<{ success: boolean }>(`/api/recipes/${id}`, {
+      method: 'DELETE',
+    }),
 
   // AI Meal Analysis
   parseMealText: (prompt: string) =>
     request<AiMealAnalysisResult>('/api/ai/parse-text', {
+      method: 'POST',
+      body: JSON.stringify({ prompt }),
+    }),
+
+  // AI Recipe Creation
+  parseRecipeText: (prompt: string) =>
+    request<AiRecipeAnalysisResult>('/api/ai/parse-recipe', {
       method: 'POST',
       body: JSON.stringify({ prompt }),
     }),

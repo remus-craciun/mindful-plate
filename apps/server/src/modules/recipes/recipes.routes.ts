@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { createRecipeSchema } from '@mindful-plate/shared';
 import { db } from '../../db';
 import { recipes, recipeIngredients } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export const recipeRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.addHook('onRequest', async (req, rep) => {
@@ -78,5 +78,21 @@ export const recipeRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     return reply.status(201).send({ recipe: complete });
+  });
+
+  // Delete recipe
+  fastify.delete('/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = (request.user as { id: string }).id;
+
+    const deleted = await db.delete(recipes)
+      .where(and(eq(recipes.id, id), eq(recipes.userId, userId)))
+      .returning();
+
+    if (deleted.length === 0) {
+      return reply.status(404).send({ error: 'Recipe not found' });
+    }
+
+    return reply.send({ success: true });
   });
 };
