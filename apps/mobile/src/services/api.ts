@@ -183,7 +183,8 @@ export const api = {
     });
 
     if (!res.ok) {
-      throw new Error(`Failed to analyze image: ${res.status}`);
+      const errorBody = await res.json().catch(() => ({}));
+      throw new Error(extractErrorMessage(errorBody) || `Failed to analyze image (HTTP ${res.status})`);
     }
 
     return res.json();

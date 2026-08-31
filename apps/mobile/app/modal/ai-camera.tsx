@@ -51,18 +51,7 @@ export default function AiCameraModal() {
       const data = await api.parseMealImage(uri);
       setResult(data);
     } catch (err: any) {
-      // Fallback demo for camera inspection
-      setResult({
-        items: [
-          { name: 'Grilled Chicken Breast', quantity: 150, unit: 'g', calories: 247, protein: 46.5, carbs: 0, fat: 5.4 },
-          { name: 'Steamed Jasmine Rice', quantity: 180, unit: 'g', calories: 234, protein: 4.8, carbs: 50.7, fat: 0.5 },
-          { name: 'Steamed Broccoli', quantity: 100, unit: 'g', calories: 35, protein: 2.4, carbs: 7.2, fat: 0.4 },
-        ],
-        totalCalories: 516,
-        totalProtein: 53.7,
-        totalCarbs: 57.9,
-        totalFat: 6.3,
-      });
+      Alert.alert('Analysis failed', err.message || 'Could not analyze this photo. Please try again.');
     } finally {
       setLoading(false);
     }

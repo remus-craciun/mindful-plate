@@ -29,18 +29,7 @@ export default function AiPromptModal() {
       const data = await api.parseMealText(prompt);
       setResult(data);
     } catch (err: any) {
-      // Fallback demo result if backend or key is not yet connected
-      setResult({
-        items: [
-          { name: 'Scrambled Eggs', quantity: 3, unit: 'large eggs', calories: 216, protein: 18.9, carbs: 1.2, fat: 14.4 },
-          { name: 'Whole Wheat Toast', quantity: 2, unit: 'slices', calories: 160, protein: 8.0, carbs: 26.0, fat: 2.0 },
-          { name: 'Butter', quantity: 1, unit: 'pat (10g)', calories: 72, protein: 0.1, carbs: 0.0, fat: 8.1 },
-        ],
-        totalCalories: 448,
-        totalProtein: 27,
-        totalCarbs: 27.2,
-        totalFat: 24.5,
-      });
+      Alert.alert('Analysis failed', err.message || 'Could not analyze this meal. Please try again.');
     } finally {
       setLoading(false);
     }

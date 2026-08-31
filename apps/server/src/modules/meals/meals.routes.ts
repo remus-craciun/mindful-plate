@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { logMealRequestSchema } from '@mindful-plate/shared';
 import { db } from '../../db';
-import { mealLogs, mealItems, userProfiles } from '../../db/schema';
+import { mealLogs, mealItems, userProfiles, foods } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export const mealRoutes: FastifyPluginAsync = async (fastify) => {
@@ -102,6 +102,37 @@ export const mealRoutes: FastifyPluginAsync = async (fastify) => {
           fiber: item.fiber || 0,
         }))
       );
+
+      // Items logged this way (AI-parsed text/photo, or any future free-form
+      // entry) don't already exist in the shared foods table the way
+      // manually-searched items do — persist them here so they're searchable
+      // and reusable next time, instead of only living inside this one log.
+      const existingFoods = await db.query.foods.findMany({ columns: { name: true } });
+      const existingNames = new Set(existingFoods.map((f) => f.name.toLowerCase()));
+      const seen = new Set<string>();
+      const newFoods = items.filter((item) => {
+        const key = item.name.trim().toLowerCase();
+        if (!key || existingNames.has(key) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (newFoods.length > 0) {
+        await db.insert(foods).values(
+          newFoods.map((item) => ({
+            name: item.name.trim(),
+            servingSize: item.quantity,
+            servingUnit: item.unit,
+            calories: Math.round(item.calories),
+            protein: item.protein,
+            carbs: item.carbs,
+            fat: item.fat,
+            fiber: item.fiber || 0,
+            isCustom: true,
+            userId,
+          }))
+        );
+      }
     }
 
     const completeLog = await db.query.mealLogs.findFirst({

@@ -25,7 +25,7 @@ Break down composite dishes into key ingredients or standard portions. Be realis
 Always return response adhering strictly to the JSON schema.`;
 
     const response = await this.client.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.6-flash',
       contents: [
         { text: `${systemPrompt}\n\nUser meal description: "${textPrompt}"` }
       ],
@@ -63,7 +63,7 @@ Always return response adhering strictly to the JSON schema.`;
       },
     });
 
-    const content = response.text();
+    const content = response.text;
     if (!content) {
       throw new Error('No output received from Gemini model.');
     }
@@ -86,7 +86,7 @@ Always return response adhering strictly to the JSON schema.`;
     const base64Data = imageBuffer.toString('base64');
 
     const response = await this.client.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.6-flash',
       contents: [
         { text: systemPrompt },
         {
@@ -130,7 +130,7 @@ Always return response adhering strictly to the JSON schema.`;
       },
     });
 
-    const content = response.text();
+    const content = response.text;
     if (!content) {
       throw new Error('No output received from Gemini model.');
     }
