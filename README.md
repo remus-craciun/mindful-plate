@@ -6,7 +6,7 @@ A modern, full-stack nutrition, calorie, macro, and water tracking application.
 - **Backend API**: **Bun + Fastify + Drizzle ORM**.
 - **Database**: Local host **PostgreSQL 16** (not containerized).
 - **Multimodal AI**: **Google Gemini 2.0/2.5 Flash** for natural language meal description parsing and plate photo nutrition analysis.
-- **DevOps & Self-Hosting**: **Docker** (`oven/bun:1-alpine` + Caddy reverse proxy) deployed to a **Raspberry Pi** using automated **Ansible** playbooks.
+- **DevOps & Self-Hosting**: **Docker** (`oven/bun:1-alpine`) deployed to a **Raspberry Pi** via a minimal **Ansible** playbook (pull code, build, run); an optional Caddy reverse-proxy setup is available separately via direct Docker Compose.
 
 ---
 
@@ -63,16 +63,20 @@ bun test
 
 ---
 
-## 🍓 Raspberry Pi Deployment (Ansible + Docker)
+## 🍓 Raspberry Pi Deployment (Ansible)
 
-The deployment automates the setup on your Raspberry Pi:
-1. Provisions native **PostgreSQL** service and creates user & database.
-2. Installs **Docker CE** and Docker Compose plugin.
-3. Configures **UFW firewall** (ports 22, 80, 443).
-4. Synchronizes app files, generates `.env`, and launches the Bun Fastify container + Caddy reverse proxy.
+A deliberately minimal playbook — it does exactly three things and nothing
+else. It does **not** install or remove any software on the host; Docker and
+Postgres are assumed to already be set up there.
+1. SSHes to the host and `git pull`s the code (clones on first run).
+2. Rotates images: drops any existing `mindful-plate:previous`, re-tags the
+   current `mindful-plate:latest` as `previous`, then builds the new image
+   as `latest`.
+3. Stops/removes the existing `mindful-plate` container and starts a new one
+   from the freshly built image.
 
 ### Deploying:
-1. Copy `deploy/ansible/.env.example` to `deploy/ansible/.env` and fill in real values — your Pi's IP/hostname and SSH user (`PI_HOST`, `PI_SSH_USER`, `PI_SSH_KEY`), a DB password, a 32+ character JWT secret, your domain, and your Gemini API key. This file is gitignored — never commit real secrets. Then load it into your shell:
+1. Copy `deploy/ansible/.env.example` to `deploy/ansible/.env` and fill in real values — your Pi's IP/hostname and SSH user (`PI_HOST`, `PI_SSH_USER`, `PI_SSH_KEY`), a DB password, and a 32+ character JWT secret at minimum. This file is gitignored — never commit real secrets. Then load it into your shell:
    ```bash
    cp deploy/ansible/.env.example deploy/ansible/.env
    # edit deploy/ansible/.env with real values
@@ -80,15 +84,12 @@ The deployment automates the setup on your Raspberry Pi:
    ```
    `deploy/ansible/inventory.yml` and `playbook.yml` read these via `lookup('env', ...)`; the playbook refuses to run if `DB_PASSWORD` or `JWT_SECRET` are missing, rather than silently deploying with a placeholder secret.
 
-### Deploying to Production (Default - Swagger disabled):
-```bash
-ansible-playbook -i deploy/ansible/inventory.yml deploy/ansible/playbook.yml
-```
+2. Deploy:
+   ```bash
+   ansible-playbook -i deploy/ansible/inventory.yml deploy/ansible/playbook.yml
+   ```
 
-### Deploying to Development on Pi (Swagger enabled at `/docs`):
-```bash
-ansible-playbook -i deploy/ansible/inventory.yml deploy/ansible/playbook.yml -e "env=development"
-```
+To roll back after a bad deploy, SSH in and run the previous image directly: `docker run -d --name mindful-plate --restart unless-stopped -p 3000:3000 --add-host=host.docker.internal:host-gateway <same -e flags as the playbook> mindful-plate:previous` (only one generation back is kept — rotating a new deploy on top of a rollback discards it).
 
 ---
 

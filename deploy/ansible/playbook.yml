@@ -1,21 +1,22 @@
 ---
-- name: Deploy Mindful Plate to Raspberry Pi
+# Minimal deploy: ssh to the host, pull the code, build a Docker image, run
+# it as a container. Does not install or remove any software on the host —
+# Docker and Postgres are assumed to already be set up there.
+- name: Deploy Mindful Plate
   hosts: raspberrypi
-  become: yes
   vars:
-    app_env: "{{ env | default('production') }}"
-    compose_file: "{{ 'docker-compose.prod.yml' if (app_env == 'production') else 'docker-compose.dev.yml' }}"
     app_dir: "/home/{{ ansible_user }}/mindful-plate"
+    image_name: mindful-plate
     # Sourced from the environment — see deploy/ansible/.env.example.
     # Load it into your shell before running this playbook:
     #   set -a && source deploy/ansible/.env && set +a
+    git_repo: "{{ lookup('env', 'GIT_REPO_URL') | default('https://github.com/remus-craciun/mindful-plate.git', true) }}"
+    git_branch: "{{ lookup('env', 'GIT_BRANCH') | default('main', true) }}"
     db_user: "{{ lookup('env', 'DB_USER') | default('mindful_user', true) }}"
     db_password: "{{ lookup('env', 'DB_PASSWORD') | default('', true) }}"
     db_name: "{{ lookup('env', 'DB_NAME') | default('mindful_plate', true) }}"
     jwt_secret: "{{ lookup('env', 'JWT_SECRET') | default('', true) }}"
     gemini_api_key: "{{ lookup('env', 'GEMINI_API_KEY') | default('', true) }}"
-    domain_name: "{{ lookup('env', 'DOMAIN_NAME') | default('mindful.local', true) }}"
-    acme_email: "{{ lookup('env', 'ACME_EMAIL') | default('admin@example.com', true) }}"
 
   pre_tasks:
     - name: Ensure required secrets were provided via the environment
@@ -30,8 +31,48 @@
           set -a && source deploy/ansible/.env && set +a
         success_msg: "Required secrets present."
 
-  roles:
-    - security
-    - postgres
-    - docker
-    - app
+  tasks:
+    - name: Pull latest code (clones on first run)
+      ansible.builtin.git:
+        repo: "{{ git_repo }}"
+        dest: "{{ app_dir }}"
+        version: "{{ git_branch }}"
+        force: yes
+
+    - name: Remove existing "previous"-tagged image, if any
+      ansible.builtin.command: docker rmi {{ image_name }}:previous
+      register: rmi_previous
+      failed_when: false
+      changed_when: rmi_previous.rc == 0
+
+    - name: Re-tag current "latest" as "previous" (no-op on first deploy)
+      ansible.builtin.command: docker tag {{ image_name }}:latest {{ image_name }}:previous
+      register: tag_previous
+      failed_when: false
+      changed_when: tag_previous.rc == 0
+
+    - name: Build new image, tagged latest
+      ansible.builtin.command: docker build -f apps/server/Dockerfile -t {{ image_name }}:latest .
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Stop and remove the existing container
+      ansible.builtin.command: docker rm -f {{ image_name }}
+      register: rm_container
+      failed_when: false
+      changed_when: rm_container.rc == 0
+
+    - name: Start the new container
+      ansible.builtin.command: >
+        docker run -d
+        --name {{ image_name }}
+        --restart unless-stopped
+        --add-host=host.docker.internal:host-gateway
+        -p 3000:3000
+        -e NODE_ENV=production
+        -e PORT=3000
+        -e HOST=0.0.0.0
+        -e DATABASE_URL=postgresql://{{ db_user }}:{{ db_password }}@host.docker.internal:5432/{{ db_name }}
+        -e JWT_SECRET={{ jwt_secret }}
+        -e GEMINI_API_KEY={{ gemini_api_key }}
+        {{ image_name }}:latest
