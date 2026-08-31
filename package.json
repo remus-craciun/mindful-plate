@@ -16,7 +16,8 @@
     "db:push": "bun --filter @mindful-plate/server db:push",
     "db:seed": "bun --filter @mindful-plate/server db:seed",
     "deploy": "bun deploy/scripts/deploy.ts deploy",
-    "deploy:revert": "bun deploy/scripts/deploy.ts revert"
+    "deploy:revert": "bun deploy/scripts/deploy.ts revert",
+    "deploy:ansible": "bun deploy/scripts/ansible-deploy.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

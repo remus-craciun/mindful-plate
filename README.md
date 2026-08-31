@@ -94,6 +94,11 @@ bun run deploy:revert   # roll back to the "previous" image (only one generation
 
 ### Deploying (Ansible):
 ```bash
+bun run deploy:ansible                  # loads deploy/ansible/.env for you and runs the playbook
+bun run deploy:ansible -- --check       # forwards extra args to ansible-playbook, e.g. a dry run
+```
+Or invoke `ansible-playbook` directly if you'd rather load the env yourself:
+```bash
 set -a && source deploy/ansible/.env && set +a
 ansible-playbook -i deploy/ansible/inventory.yml deploy/ansible/playbook.yml
 ```
