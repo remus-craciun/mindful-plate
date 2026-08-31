@@ -12,9 +12,7 @@
     #   set -a && source deploy/ansible/.env && set +a
     git_repo: "{{ lookup('env', 'GIT_REPO_URL') | default('https://github.com/remus-craciun/mindful-plate.git', true) }}"
     git_branch: "{{ lookup('env', 'GIT_BRANCH') | default('main', true) }}"
-    db_user: "{{ lookup('env', 'DB_USER') | default('mindful_user', true) }}"
-    db_password: "{{ lookup('env', 'DB_PASSWORD') | default('', true) }}"
-    db_name: "{{ lookup('env', 'DB_NAME') | default('mindful_plate', true) }}"
+    database_url: "{{ lookup('env', 'DATABASE_URL') | default('', true) }}"
     jwt_secret: "{{ lookup('env', 'JWT_SECRET') | default('', true) }}"
     gemini_api_key: "{{ lookup('env', 'GEMINI_API_KEY') | default('', true) }}"
 
@@ -22,10 +20,10 @@
     - name: Ensure required secrets were provided via the environment
       assert:
         that:
-          - db_password | length > 0
+          - database_url | length > 0
           - jwt_secret | length >= 32
         fail_msg: >-
-          DB_PASSWORD and a JWT_SECRET (32+ characters) must be set before
+          DATABASE_URL and a JWT_SECRET (32+ characters) must be set before
           deploying. Copy deploy/ansible/.env.example to deploy/ansible/.env,
           fill in real values, then run:
           set -a && source deploy/ansible/.env && set +a
@@ -63,16 +61,32 @@
       changed_when: rm_container.rc == 0
 
     - name: Start the new container
-      ansible.builtin.command: >
-        docker run -d
-        --name {{ image_name }}
-        --restart unless-stopped
-        --add-host=host.docker.internal:host-gateway
-        -p 3000:3000
-        -e NODE_ENV=production
-        -e PORT=3000
-        -e HOST=0.0.0.0
-        -e DATABASE_URL=postgresql://{{ db_user }}:{{ db_password }}@host.docker.internal:5432/{{ db_name }}
-        -e JWT_SECRET={{ jwt_secret }}
-        -e GEMINI_API_KEY={{ gemini_api_key }}
-        {{ image_name }}:latest
+      # List form: each argument is passed literally, with no shell
+      # invocation and no whitespace-splitting — a secret containing a
+      # space or shell-special character can't break or misparse the
+      # command the way it could inside a single interpolated string.
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - -d
+          - --name
+          - "{{ image_name }}"
+          - --restart
+          - unless-stopped
+          - --add-host=host.docker.internal:host-gateway
+          - -p
+          - "3000:3000"
+          - -e
+          - NODE_ENV=production
+          - -e
+          - PORT=3000
+          - -e
+          - HOST=0.0.0.0
+          - -e
+          - "DATABASE_URL={{ database_url }}"
+          - -e
+          - "JWT_SECRET={{ jwt_secret }}"
+          - -e
+          - "GEMINI_API_KEY={{ gemini_api_key }}"
+          - "{{ image_name }}:latest"

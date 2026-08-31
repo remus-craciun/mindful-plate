@@ -79,12 +79,12 @@ Two equivalent ways to run it — a Bun script (no extra dependencies) or the
 Ansible playbook (if you already have Ansible).
 
 ### Setup (once):
-Copy `deploy/ansible/.env.example` to `deploy/ansible/.env` and fill in real values — your host's IP/hostname and SSH user (`HOST`, `SSH_USER`, `SSH_KEY`), a DB password, and a 32+ character JWT secret at minimum. This file is gitignored — never commit real secrets.
+Copy `deploy/ansible/.env.example` to `deploy/ansible/.env` and fill in real values — your host's IP/hostname and SSH user (`HOST`, `SSH_USER`, `SSH_KEY`), a `DATABASE_URL`, and a 32+ character JWT secret at minimum. This file is gitignored — never commit real secrets.
 ```bash
 cp deploy/ansible/.env.example deploy/ansible/.env
 # edit deploy/ansible/.env with real values
 ```
-Both tools refuse to run if `DB_PASSWORD` or `JWT_SECRET` are missing, rather than silently deploying with a placeholder secret.
+Both tools refuse to run if `DATABASE_URL` or `JWT_SECRET` are missing, rather than silently deploying with a placeholder secret.
 
 ### Deploying (Bun script):
 ```bash

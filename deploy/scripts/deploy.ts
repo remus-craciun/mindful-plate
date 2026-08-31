@@ -55,9 +55,7 @@ const SSH_USER = env('SSH_USER', 'deploy');
 const SSH_KEY = env('SSH_KEY');
 const GIT_REPO_URL = env('GIT_REPO_URL', 'https://github.com/remus-craciun/mindful-plate.git');
 const GIT_BRANCH = env('GIT_BRANCH', 'main');
-const DB_USER = env('DB_USER', 'mindful_user');
-const DB_PASSWORD = env('DB_PASSWORD');
-const DB_NAME = env('DB_NAME', 'mindful_plate');
+const DATABASE_URL = env('DATABASE_URL');
 const JWT_SECRET = env('JWT_SECRET');
 const GEMINI_API_KEY = env('GEMINI_API_KEY');
 
@@ -69,7 +67,7 @@ if (action !== 'deploy' && action !== 'revert') {
 
 const missing: string[] = [];
 if (!HOST) missing.push('HOST');
-if (!DB_PASSWORD) missing.push('DB_PASSWORD');
+if (!DATABASE_URL) missing.push('DATABASE_URL');
 if (!JWT_SECRET || JWT_SECRET.length < 32) missing.push('JWT_SECRET (32+ characters)');
 if (missing.length > 0) {
   console.error(`Missing required config: ${missing.join(', ')}`);
@@ -89,7 +87,7 @@ function runContainerCmd(tag: string): string {
     '-e NODE_ENV=production',
     '-e PORT=3000',
     '-e HOST=0.0.0.0',
-    `-e DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@host.docker.internal:5432/${DB_NAME}`,
+    `-e DATABASE_URL=${shq(DATABASE_URL)}`,
     `-e JWT_SECRET=${shq(JWT_SECRET)}`,
     `-e GEMINI_API_KEY=${shq(GEMINI_API_KEY)}`,
     `${IMAGE_NAME}:${tag}`,
