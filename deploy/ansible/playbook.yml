@@ -6,13 +6,29 @@
     app_env: "{{ env | default('production') }}"
     compose_file: "{{ 'docker-compose.prod.yml' if (app_env == 'production') else 'docker-compose.dev.yml' }}"
     app_dir: "/home/{{ ansible_user }}/mindful-plate"
-    db_user: "mindful_user"
-    db_password: "mindful_secure_password_replace_me"
-    db_name: "mindful_plate"
-    jwt_secret: "super_secure_mindful_plate_jwt_key_at_least_32_chars!"
-    gemini_api_key: "{{ lookup('env', 'GEMINI_API_KEY') | default('') }}"
-    domain_name: "mindful.local"
-    acme_email: "admin@example.com"
+    # Sourced from the environment — see deploy/ansible/.env.example.
+    # Load it into your shell before running this playbook:
+    #   set -a && source deploy/ansible/.env && set +a
+    db_user: "{{ lookup('env', 'DB_USER') | default('mindful_user', true) }}"
+    db_password: "{{ lookup('env', 'DB_PASSWORD') | default('', true) }}"
+    db_name: "{{ lookup('env', 'DB_NAME') | default('mindful_plate', true) }}"
+    jwt_secret: "{{ lookup('env', 'JWT_SECRET') | default('', true) }}"
+    gemini_api_key: "{{ lookup('env', 'GEMINI_API_KEY') | default('', true) }}"
+    domain_name: "{{ lookup('env', 'DOMAIN_NAME') | default('mindful.local', true) }}"
+    acme_email: "{{ lookup('env', 'ACME_EMAIL') | default('admin@example.com', true) }}"
+
+  pre_tasks:
+    - name: Ensure required secrets were provided via the environment
+      assert:
+        that:
+          - db_password | length > 0
+          - jwt_secret | length >= 32
+        fail_msg: >-
+          DB_PASSWORD and a JWT_SECRET (32+ characters) must be set before
+          deploying. Copy deploy/ansible/.env.example to deploy/ansible/.env,
+          fill in real values, then run:
+          set -a && source deploy/ansible/.env && set +a
+        success_msg: "Required secrets present."
 
   roles:
     - security

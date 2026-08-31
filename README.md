@@ -77,10 +77,14 @@ The deployment automates the setup on your Raspberry Pi:
    [raspberrypi]
    pi-server ansible_host=192.168.1.100 ansible_user=pi
    ```
-2. Set your Gemini API key in your terminal environment:
+2. Copy `deploy/ansible/.env.example` to `deploy/ansible/.env` and fill in real values (DB password, a 32+ character JWT secret, your domain, and your Gemini API key). This file is gitignored — never commit real secrets. Then load it into your shell:
    ```bash
-   export GEMINI_API_KEY="your_actual_gemini_key"
+   cp deploy/ansible/.env.example deploy/ansible/.env
+   # edit deploy/ansible/.env with real values
+   set -a && source deploy/ansible/.env && set +a
    ```
+   The playbook reads these via `lookup('env', ...)` and refuses to run if `DB_PASSWORD` or `JWT_SECRET` are missing, rather than silently deploying with a placeholder secret.
+
 ### Deploying to Production (Default - Swagger disabled):
 ```bash
 ansible-playbook -i deploy/ansible/inventory.ini deploy/ansible/playbook.yml
