@@ -152,8 +152,17 @@ export const api = {
     }),
 
   // Foods
-  searchFoods: (query: string) =>
-    request<{ foods: any[] }>(`/api/foods/search?q=${encodeURIComponent(query)}`),
+  searchFoods: (query: string, options: { source?: 'all' | 'common' | 'custom'; sort?: 'name' | 'calories' | 'protein'; limit?: number; offset?: number } = {}) => {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (options.source && options.source !== 'all') params.set('source', options.source);
+    if (options.sort) params.set('sort', options.sort);
+    if (options.limit != null) params.set('limit', String(options.limit));
+    if (options.offset != null) params.set('offset', String(options.offset));
+    return request<{ foods: any[]; hasMore: boolean; offset: number; limit: number }>(
+      `/api/foods/search?${params.toString()}`
+    );
+  },
 
   createCustomFood: (food: FoodItemDto) =>
     request<{ food: any }>('/api/foods/custom', {

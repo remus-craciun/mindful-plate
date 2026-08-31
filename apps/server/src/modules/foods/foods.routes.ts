@@ -2,38 +2,66 @@ import { FastifyPluginAsync } from 'fastify';
 import { foodItemSchema } from '@mindful-plate/shared';
 import { db } from '../../db';
 import { foods } from '../../db/schema';
-import { ilike, or, eq, gt, asc } from 'drizzle-orm';
+import { ilike, or, and, eq, gt, asc, desc } from 'drizzle-orm';
+
+const SEARCH_SORTS = {
+  name: asc(foods.name),
+  calories: asc(foods.calories),
+  protein: desc(foods.protein),
+} as const;
+type SearchSort = keyof typeof SEARCH_SORTS;
 
 export const foodRoutes: FastifyPluginAsync = async (fastify) => {
-  // Public or auth search
+  // Paginated, filterable, sortable search. `source` narrows to common
+  // (isCustom=false) or custom (isCustom=true) foods; `sort` defaults to
+  // name. Fetches one extra row over `limit` to derive `hasMore` without a
+  // separate count query.
   fastify.get('/search', async (request, reply) => {
-    const { q } = request.query as { q?: string };
-    if (!q || q.trim().length === 0) {
-      const top = await db.query.foods.findMany({ limit: 20 });
-      return reply.send({ foods: top });
+    const { q, source, sort, limit: limitParam, offset: offsetParam } = request.query as {
+      q?: string;
+      source?: string;
+      sort?: string;
+      limit?: string;
+      offset?: string;
+    };
+
+    const limit = Math.min(Math.max(parseInt(limitParam ?? '', 10) || 20, 1), 50);
+    const offset = Math.max(parseInt(offsetParam ?? '', 10) || 0, 0);
+    const orderBy = SEARCH_SORTS[sort as SearchSort] ?? SEARCH_SORTS.name;
+
+    const conditions = [];
+    if (q && q.trim().length > 0) {
+      conditions.push(or(ilike(foods.name, `%${q}%`), ilike(foods.brand, `%${q}%`)));
+    }
+    if (source === 'common') {
+      conditions.push(eq(foods.isCustom, false));
+    } else if (source === 'custom') {
+      conditions.push(eq(foods.isCustom, true));
     }
 
-    const matches = await db.query.foods.findMany({
-      where: or(
-        ilike(foods.name, `%${q}%`),
-        ilike(foods.brand, `%${q}%`)
-      ),
-      limit: 25,
+    const results = await db.query.foods.findMany({
+      where: conditions.length > 0 ? and(...conditions) : undefined,
+      orderBy: [orderBy],
+      limit: limit + 1,
+      offset,
     });
 
-    return reply.send({ foods: matches });
+    const hasMore = results.length > limit;
+    return reply.send({
+      foods: hasMore ? results.slice(0, limit) : results,
+      hasMore,
+      offset,
+      limit,
+    });
   });
 
   // Incremental sync for the mobile app's local SQLite cache: with no `since`,
-  // returns the full table (first sync); with `since`, only rows created after
-  // it.
-  //
-  // `createdAt` is a `timestamp` (no tz) column, so Postgres stores it in the
-  // session's local timezone rather than true UTC (see schema.ts). The cursor
-  // we hand back must therefore come from that same column, not this
-  // process's clock (`new Date()`) — otherwise, on any server not running in
-  // UTC, comparing a real-UTC cursor against the skewed column makes every
-  // sync re-fetch the whole table forever instead of just what's new.
+  // returns the full table (first sync); with `since`, only rows created
+  // after it. `createdAt` is `timestamp with time zone`, so this cursor
+  // could just use this process's own clock — using the returned rows'
+  // own latest `createdAt` (+1ms, since Postgres's microsecond precision
+  // exceeds JS Date's millisecond precision) instead is still correct and
+  // avoids ever depending on this server's clock being right.
   fastify.get('/sync', async (request, reply) => {
     const { since } = request.query as { since?: string };
     const sinceDate = since ? new Date(since) : undefined;

@@ -113,15 +113,25 @@ export async function syncFoodsFromServer(): Promise<number> {
   return res.foods.length;
 }
 
-export async function searchLocalFoods(query: string): Promise<LocalFood[]> {
+// Offline fallback only (server unreachable) — a single unpaginated page,
+// always name-sorted, but still respects the source filter so switching to
+// "My Custom Foods" while offline doesn't silently show everything.
+export async function searchLocalFoods(
+  query: string,
+  source: 'all' | 'common' | 'custom' = 'all'
+): Promise<LocalFood[]> {
   await initLocalFoodsDb();
   const db = await getDb();
   const trimmed = query.trim();
+  const sourceClause = source === 'custom' ? 'AND isCustom = 1' : source === 'common' ? 'AND isCustom = 0' : '';
+
   if (!trimmed) {
-    return db.getAllAsync<LocalFood>('SELECT * FROM foods ORDER BY name LIMIT 20');
+    return db.getAllAsync<LocalFood>(
+      `SELECT * FROM foods WHERE 1=1 ${sourceClause} ORDER BY name LIMIT 20`
+    );
   }
   return db.getAllAsync<LocalFood>(
-    'SELECT * FROM foods WHERE name LIKE ? OR brand LIKE ? ORDER BY name LIMIT 25',
+    `SELECT * FROM foods WHERE (name LIKE ? OR brand LIKE ?) ${sourceClause} ORDER BY name LIMIT 25`,
     [`%${trimmed}%`, `%${trimmed}%`]
   );
 }
