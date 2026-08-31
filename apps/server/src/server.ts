@@ -66,10 +66,14 @@ export async function buildServer(isTest = false) {
     });
   }
 
-  // Health check: simple status without internal engine/stack exposure
+  // Health check: simple status without internal engine/stack exposure.
+  // `timezone` lets the mobile client compute "today"/day-boundaries against
+  // the server's timezone instead of the device's own (which may be wrong
+  // or simply not what a self-hosted single-user deployment wants).
   fastify.get('/health', async () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   }));
 
   // Route groups

@@ -9,7 +9,7 @@ import { MealSection } from '../../src/components/MealSection';
 import { useStore } from '../../src/store/useStore';
 import { api } from '../../src/services/api';
 import { MealType } from '@mindful-plate/shared';
-import { getLocalDateKey, shiftDateKey } from '../../src/utils/date';
+import { getDateKey, shiftDateKey } from '../../src/utils/date';
 
 interface DailyItem {
   id: string;
@@ -33,8 +33,7 @@ const MEAL_LABELS: Record<MealType, string> = {
 
 const EMPTY_MEALS: Record<MealType, DailyItem[]> = { breakfast: [], lunch: [], dinner: [], snack: [] };
 
-function formatDateLabel(dateKey: string): string {
-  const todayKey = getLocalDateKey();
+function formatDateLabel(dateKey: string, todayKey: string): string {
   if (dateKey === todayKey) return 'Today';
   if (dateKey === shiftDateKey(todayKey, -1)) return 'Yesterday';
   return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, {
@@ -46,8 +45,8 @@ function formatDateLabel(dateKey: string): string {
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { selectedDate, setSelectedDate } = useStore();
-  const todayKey = getLocalDateKey();
+  const { selectedDate, setSelectedDate, serverTimezone } = useStore();
+  const todayKey = getDateKey(serverTimezone);
   const isToday = selectedDate === todayKey;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -205,7 +204,7 @@ export default function DashboardScreen() {
             className="flex-row items-center"
           >
             <Calendar size={14} color="#64748b" />
-            <Text className="text-white font-bold text-sm ml-2">{formatDateLabel(selectedDate)}</Text>
+            <Text className="text-white font-bold text-sm ml-2">{formatDateLabel(selectedDate, todayKey)}</Text>
             {!isToday && <Text className="text-emerald-400 text-xs font-semibold ml-2">Jump to Today</Text>}
           </TouchableOpacity>
 
@@ -228,7 +227,7 @@ export default function DashboardScreen() {
               </View>
               <Text className="text-white text-4xl font-extrabold">{calories.remaining}</Text>
               <Text className="text-slate-400 text-xs mt-1">
-                {isToday ? 'Calories remaining for today' : `Calories remaining on ${formatDateLabel(selectedDate)}`}
+                {isToday ? 'Calories remaining for today' : `Calories remaining on ${formatDateLabel(selectedDate, todayKey)}`}
               </Text>
             </View>
 

@@ -5,7 +5,6 @@ import {
   AiMealAnalysisResult,
   FoodItemDto,
 } from '@mindful-plate/shared';
-import { getLocalDateKey } from '../utils/date';
 
 // Configurable backend URL: defaults to localhost:3000 for simulator or local dev
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
@@ -60,7 +59,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Server health (not under /api — see apps/server/src/server.ts)
-  checkHealth: () => request<{ status: string; timestamp: string }>('/health'),
+  checkHealth: () => request<{ status: string; timestamp: string; timezone: string }>('/health'),
 
   // Auth
   checkAuthStatus: () =>
@@ -132,13 +131,10 @@ export const api = {
       logs: any[];
     }>(`/api/water${date ? `?date=${date}` : ''}`),
 
-  logWater: (amountMl: number, date?: string) =>
+  logWater: (amountMl: number, date: string) =>
     request<{ log: any }>('/api/water/log', {
       method: 'POST',
-      body: JSON.stringify({
-        amountMl,
-        date: date || getLocalDateKey(),
-      }),
+      body: JSON.stringify({ amountMl, date }),
     }),
 
   deleteWaterLog: (id: string) =>

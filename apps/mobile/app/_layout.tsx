@@ -17,17 +17,21 @@ const queryClient = new QueryClient({
 import { useRouter, useSegments } from 'expo-router';
 import { useStore } from '../src/store/useStore';
 import { syncFoodsFromServer } from '../src/services/localFoodsDb';
+import { api } from '../src/services/api';
 
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const { token, isHydrated, hydrateAuth } = useStore();
+  const { token, isHydrated, hydrateAuth, setServerTimezone } = useStore();
 
   React.useEffect(() => {
     hydrateAuth();
     // Foods are public reference data; sync as soon as we can reach the
     // server so the local cache picks up anything new, offline or not.
     syncFoodsFromServer().catch(() => {});
+    // Use the server's timezone for "today"/day-boundary logic instead of
+    // the device's own — see apps/mobile/src/utils/date.ts.
+    api.checkHealth().then((res) => setServerTimezone(res.timezone)).catch(() => {});
   }, []);
 
   React.useEffect(() => {
