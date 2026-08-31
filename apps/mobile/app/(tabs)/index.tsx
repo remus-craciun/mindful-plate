@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Sparkles, Camera, Flame } from 'lucide-react-native';
+import { Sparkles, Camera, Flame, ChevronLeft, ChevronRight, Calendar } from 'lucide-react-native';
 import { MacroCard } from '../../src/components/MacroCard';
 import { WaterTracker } from '../../src/components/WaterTracker';
 import { MealSection } from '../../src/components/MealSection';
@@ -32,9 +32,32 @@ const MEAL_LABELS: Record<MealType, string> = {
 
 const EMPTY_MEALS: Record<MealType, DailyItem[]> = { breakfast: [], lunch: [], dinner: [], snack: [] };
 
+function toDateKey(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+function shiftDateKey(dateKey: string, days: number): string {
+  const d = new Date(`${dateKey}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return toDateKey(d);
+}
+
+function formatDateLabel(dateKey: string): string {
+  const todayKey = toDateKey(new Date());
+  if (dateKey === todayKey) return 'Today';
+  if (dateKey === shiftDateKey(todayKey, -1)) return 'Yesterday';
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export default function DashboardScreen() {
   const router = useRouter();
-  const { selectedDate } = useStore();
+  const { selectedDate, setSelectedDate } = useStore();
+  const todayKey = toDateKey(new Date());
+  const isToday = selectedDate === todayKey;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [summary, setSummary] = useState<{
@@ -60,7 +83,7 @@ export default function DashboardScreen() {
       const type = log.mealType as MealType;
       if (!grouped[type]) continue;
       for (const item of log.items) {
-        grouped[type].push({ ...item, mealLogId: log.id });
+        grouped[type].push(item);
       }
     }
     setMealsByType(grouped);
@@ -108,9 +131,9 @@ export default function DashboardScreen() {
     }
   };
 
-  const handleDeleteItem = async (mealLogId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
     try {
-      await api.deleteMeal(mealLogId);
+      await api.deleteMealItem(itemId);
       await loadDashboard();
     } catch (err: any) {
       Alert.alert('Could not delete', err.message || 'Please try again.');
@@ -143,7 +166,7 @@ export default function DashboardScreen() {
         {/* Header */}
         <View className="flex-row items-center justify-between pt-2 pb-4">
           <View>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Today's Nutrition</Text>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Nutrition Diary</Text>
             <Text className="text-white text-2xl font-black">Mindful Plate</Text>
           </View>
           <View className="flex-row space-x-2">
@@ -162,6 +185,34 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* Date Navigation */}
+        <View className="flex-row items-center justify-between bg-slate-900/60 border border-slate-800 rounded-2xl px-2 py-2 mb-5">
+          <TouchableOpacity
+            onPress={() => setSelectedDate(shiftDateKey(selectedDate, -1))}
+            className="w-9 h-9 rounded-xl items-center justify-center active:bg-slate-800"
+          >
+            <ChevronLeft size={20} color="#94a3b8" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => !isToday && setSelectedDate(todayKey)}
+            disabled={isToday}
+            className="flex-row items-center"
+          >
+            <Calendar size={14} color="#64748b" />
+            <Text className="text-white font-bold text-sm ml-2">{formatDateLabel(selectedDate)}</Text>
+            {!isToday && <Text className="text-emerald-400 text-xs font-semibold ml-2">Jump to Today</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => !isToday && setSelectedDate(shiftDateKey(selectedDate, 1))}
+            disabled={isToday}
+            className="w-9 h-9 rounded-xl items-center justify-center active:bg-slate-800"
+          >
+            <ChevronRight size={20} color={isToday ? '#334155' : '#94a3b8'} />
+          </TouchableOpacity>
+        </View>
+
         {/* Calorie Card */}
         <View className="bg-gradient-to-r from-emerald-950/50 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 mb-5">
           <View className="flex-row items-center justify-between">
@@ -171,7 +222,9 @@ export default function DashboardScreen() {
                 <Text className="text-emerald-400 font-semibold text-xs ml-1 uppercase tracking-wider">Remaining</Text>
               </View>
               <Text className="text-white text-4xl font-extrabold">{calories.remaining}</Text>
-              <Text className="text-slate-400 text-xs mt-1">Calories remaining for today</Text>
+              <Text className="text-slate-400 text-xs mt-1">
+                {isToday ? 'Calories remaining for today' : `Calories remaining on ${formatDateLabel(selectedDate)}`}
+              </Text>
             </View>
 
             <View className="items-end">

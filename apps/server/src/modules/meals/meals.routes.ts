@@ -143,6 +143,35 @@ export const mealRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.status(201).send({ meal: completeLog });
   });
 
+  // Delete a single logged item. A meal log can hold several items logged
+  // together in one call (AI-parsed meals, or a multi-item cart from the Log
+  // tab) — this removes just the one item, not the whole log, and cleans up
+  // the log too if that was its last remaining item.
+  fastify.delete('/items/:itemId', async (request, reply) => {
+    const { itemId } = request.params as { itemId: string };
+    const userId = (request.user as { id: string }).id;
+
+    const item = await db.query.mealItems.findFirst({
+      where: eq(mealItems.id, itemId),
+      with: { mealLog: true },
+    });
+
+    if (!item || item.mealLog.userId !== userId) {
+      return reply.status(404).send({ error: 'Meal item not found' });
+    }
+
+    await db.delete(mealItems).where(eq(mealItems.id, itemId));
+
+    const remaining = await db.query.mealItems.findMany({
+      where: eq(mealItems.mealLogId, item.mealLogId),
+    });
+    if (remaining.length === 0) {
+      await db.delete(mealLogs).where(eq(mealLogs.id, item.mealLogId));
+    }
+
+    return reply.send({ success: true });
+  });
+
   // Delete meal log
   fastify.delete('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };

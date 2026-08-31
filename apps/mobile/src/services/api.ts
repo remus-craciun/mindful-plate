@@ -110,6 +110,11 @@ export const api = {
       method: 'DELETE',
     }),
 
+  deleteMealItem: (itemId: string) =>
+    request<{ success: boolean }>(`/api/meals/items/${itemId}`, {
+      method: 'DELETE',
+    }),
+
   // Water
   getWater: (date?: string) =>
     request<{

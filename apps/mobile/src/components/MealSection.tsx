@@ -53,9 +53,9 @@ export function MealSection({ title, items, onAddItem, onDeleteItem }: MealSecti
                 <Text className="text-slate-300 font-semibold text-xs mr-3">
                   {item.calories} kcal
                 </Text>
-                {onDeleteItem && (item.mealLogId || item.id) && (
+                {onDeleteItem && item.id && (
                   <TouchableOpacity
-                    onPress={() => onDeleteItem(item.mealLogId || item.id)}
+                    onPress={() => onDeleteItem(item.id)}
                     className="p-1 active:opacity-60"
                   >
                     <Trash2 size={14} color="#ef4444" />
