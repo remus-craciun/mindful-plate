@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -6,6 +6,7 @@ import { Sparkles, Camera, Flame, ChevronLeft, ChevronRight, Calendar } from 'lu
 import { MacroCard } from '../../src/components/MacroCard';
 import { WaterTracker } from '../../src/components/WaterTracker';
 import { MealSection } from '../../src/components/MealSection';
+import { ErrorScreen } from '../../src/components/ErrorScreen';
 import { useStore } from '../../src/store/useStore';
 import { api } from '../../src/services/api';
 import { MealType } from '@mindful-plate/shared';
@@ -60,6 +61,8 @@ export default function DashboardScreen() {
   const [waterMl, setWaterMl] = useState(0);
   const [waterTargetMl, setWaterTargetMl] = useState(2500);
   const [waterLogs, setWaterLogs] = useState<{ id: string; amountMl: number; loggedAt: string }[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const hasLoadedOnce = useRef(false);
 
   const loadDashboard = useCallback(async () => {
     const [dailyRes, waterRes] = await Promise.all([
@@ -83,22 +86,42 @@ export default function DashboardScreen() {
     setWaterLogs(waterRes.logs);
   }, [selectedDate]);
 
+  // On the very first successful load, later failures (a background refresh
+  // on refocus, pull-to-refresh) shouldn't blow away a perfectly good
+  // dashboard already on screen — just notify. But if we've never loaded
+  // successfully, there's no good data to fall back to, so show a real error
+  // screen instead of the misleading zeroed-out defaults.
+  const runLoad = useCallback(
+    async (onDone?: () => void) => {
+      try {
+        await loadDashboard();
+        hasLoadedOnce.current = true;
+        setLoadError(null);
+      } catch (err: any) {
+        if (!hasLoadedOnce.current) {
+          setLoadError(err.message || "We couldn't reach the Mindful Plate server. Please check your connection and try again.");
+        } else {
+          Alert.alert('Could not refresh', err.message || 'Please try again.');
+        }
+      } finally {
+        onDone?.();
+      }
+    },
+    [loadDashboard]
+  );
+
   // Reload every time this tab is focused (initial mount, switching back from
   // another tab, or returning from a modal), not just once on first mount.
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      loadDashboard()
-        .catch((err: any) => {
-          if (active) Alert.alert('Could not load today', err.message || 'Please try again.');
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
+      runLoad(() => {
+        if (active) setLoading(false);
+      });
       return () => {
         active = false;
       };
-    }, [loadDashboard])
+    }, [runLoad])
   );
 
   const onRefresh = async () => {
@@ -153,6 +176,18 @@ export default function DashboardScreen() {
       <SafeAreaView className="flex-1 bg-slate-950 items-center justify-center">
         <ActivityIndicator size="large" color="#10b981" />
       </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorScreen
+        message={loadError}
+        onRetry={() => {
+          setLoading(true);
+          runLoad(() => setLoading(false));
+        }}
+      />
     );
   }
 

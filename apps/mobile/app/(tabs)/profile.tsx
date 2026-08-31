@@ -5,6 +5,7 @@ import { User, Activity, Target, Droplet } from 'lucide-react-native';
 import { calculateNutritionTargets, ActivityLevel } from '@mindful-plate/shared';
 import { useStore } from '../../src/store/useStore';
 import { api } from '../../src/services/api';
+import { ErrorScreen } from '../../src/components/ErrorScreen';
 
 export default function ProfileScreen() {
   const { logout, user, setProfile } = useStore();
@@ -15,6 +16,8 @@ export default function ProfileScreen() {
   const [activity, setActivity] = useState<ActivityLevel>('moderately_active');
   const [goal, setGoal] = useState<'cut' | 'maintain' | 'bulk'>('cut');
   const [saving, setSaving] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const activityLevels: { value: ActivityLevel; label: string; hint: string }[] = [
     { value: 'sedentary', label: 'Sedentary', hint: 'Little or no exercise' },
@@ -25,20 +28,29 @@ export default function ProfileScreen() {
   ];
 
   // Hydrate the form with any existing profile so Save doesn't overwrite it with placeholders
-  useEffect(() => {
+  const loadProfile = () => {
+    setLoadError(null);
     api.getMe()
       .then((res) => {
         const p = res.user?.profile;
-        if (!p) return;
-        setSex(p.sex);
-        setAge(String(p.age));
-        setHeightCm(String(p.heightCm));
-        setWeightKg(String(p.weightKg));
-        setActivity(p.activityLevel);
-        setGoal(p.goal);
-        setProfile(p);
+        if (p) {
+          setSex(p.sex);
+          setAge(String(p.age));
+          setHeightCm(String(p.heightCm));
+          setWeightKg(String(p.weightKg));
+          setActivity(p.activityLevel);
+          setGoal(p.goal);
+          setProfile(p);
+        }
       })
-      .catch(() => {});
+      .catch((err: any) => {
+        setLoadError(err.message || "We couldn't reach the Mindful Plate server. Please check your connection and try again.");
+      })
+      .finally(() => setInitialLoading(false));
+  };
+
+  useEffect(() => {
+    loadProfile();
   }, []);
 
   const targets = calculateNutritionTargets({
@@ -69,6 +81,18 @@ export default function ProfileScreen() {
       setSaving(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-950 items-center justify-center">
+        <ActivityIndicator size="large" color="#10b981" />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return <ErrorScreen message={loadError} onRetry={() => { setInitialLoading(true); loadProfile(); }} />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950 px-4">

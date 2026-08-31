@@ -44,10 +44,19 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    // A network-level failure (DNS, connection refused, offline, timeout —
+    // we never got an HTTP response at all). Never surface the underlying
+    // error here: on some platforms/polyfills it can echo the request URL,
+    // which bakes in the server's host/IP (API_BASE_URL).
+    throw new Error('Failed to connect to server.');
+  }
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
@@ -189,11 +198,16 @@ export const api = {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const res = await fetch(`${API_BASE_URL}/api/ai/parse-image`, {
-      method: 'POST',
-      body: formData,
-      headers,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE_URL}/api/ai/parse-image`, {
+        method: 'POST',
+        body: formData,
+        headers,
+      });
+    } catch {
+      throw new Error('Failed to connect to server.');
+    }
 
     if (!res.ok) {
       const errorBody = await res.json().catch(() => ({}));
