@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ShieldCheck, LogIn, UserPlus, Sparkles, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { ShieldCheck, LogIn, UserPlus, Sparkles, Mail, Lock, Eye, EyeOff, WifiOff, RefreshCw } from 'lucide-react-native';
 import { api } from '../src/services/api';
 import { useStore } from '../src/store/useStore';
 
@@ -14,6 +14,7 @@ export default function AuthScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [hasAccount, setHasAccount] = useState<boolean | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +29,23 @@ export default function AuthScreen() {
 
   const checkStatus = async () => {
     setLoading(true);
+    setServerError(null);
+
+    // Gate the entire screen (login and registration alike) behind a health
+    // check — if the server can't be reached at all, showing "Create Account"
+    // would misleadingly suggest the fix is to register, not that the
+    // server's down.
+    try {
+      const health = await api.checkHealth();
+      if (health.status !== 'ok') {
+        throw new Error(`Server reported status "${health.status}"`);
+      }
+    } catch (err: any) {
+      setServerError('Could not reach the Mindful Plate server. Please check your connection and try again.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await api.checkAuthStatus();
       setHasAccount(res.hasAccount);
@@ -36,7 +54,8 @@ export default function AuthScreen() {
         setEmail(res.email);
       }
     } catch (err: any) {
-      // If server is unreachable or offline, default to showing login or register with retry option
+      // Health is fine but this specific call failed; fall back to showing
+      // the registration form with a retry option, as before.
       setHasAccount(false);
     } finally {
       setLoading(false);
@@ -85,6 +104,25 @@ export default function AuthScreen() {
       <SafeAreaView className="flex-1 bg-slate-950 items-center justify-center">
         <ActivityIndicator size="large" color="#10b981" />
         <Text className="text-slate-400 text-sm mt-3">Connecting to Mindful Plate...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (serverError) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-950 items-center justify-center px-8">
+        <View className="w-16 h-16 rounded-3xl bg-red-500/20 border border-red-500/30 items-center justify-center mb-4">
+          <WifiOff size={32} color="#ef4444" />
+        </View>
+        <Text className="text-white text-lg font-bold text-center mb-2">Can't Reach the Server</Text>
+        <Text className="text-slate-400 text-sm text-center mb-6">{serverError}</Text>
+        <TouchableOpacity
+          onPress={checkStatus}
+          className="bg-emerald-500 active:bg-emerald-600 rounded-2xl px-6 py-3.5 flex-row items-center"
+        >
+          <RefreshCw size={16} color="#ffffff" />
+          <Text className="text-white font-bold text-sm ml-2">Retry</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }

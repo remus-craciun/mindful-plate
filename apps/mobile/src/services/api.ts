@@ -33,7 +33,10 @@ function extractErrorMessage(errorBody: any): string | undefined {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    // Only set on requests that actually have a body (e.g. bodyless DELETEs)
+    // — Fastify's JSON body parser rejects an empty body when this header is
+    // present, regardless of HTTP method.
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers as Record<string, string>),
   };
 
@@ -55,6 +58,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  // Server health (not under /api — see apps/server/src/server.ts)
+  checkHealth: () => request<{ status: string; timestamp: string }>('/health'),
+
   // Auth
   checkAuthStatus: () =>
     request<{ hasAccount: boolean; email: string | null }>('/api/auth/status'),
