@@ -72,27 +72,22 @@ The deployment automates the setup on your Raspberry Pi:
 4. Synchronizes app files, generates `.env`, and launches the Bun Fastify container + Caddy reverse proxy.
 
 ### Deploying:
-1. Update `deploy/ansible/inventory.ini` with your Raspberry Pi IP address and SSH user:
-   ```ini
-   [raspberrypi]
-   pi-server ansible_host=192.168.1.100 ansible_user=pi
-   ```
-2. Copy `deploy/ansible/.env.example` to `deploy/ansible/.env` and fill in real values (DB password, a 32+ character JWT secret, your domain, and your Gemini API key). This file is gitignored — never commit real secrets. Then load it into your shell:
+1. Copy `deploy/ansible/.env.example` to `deploy/ansible/.env` and fill in real values — your Pi's IP/hostname and SSH user (`PI_HOST`, `PI_SSH_USER`, `PI_SSH_KEY`), a DB password, a 32+ character JWT secret, your domain, and your Gemini API key. This file is gitignored — never commit real secrets. Then load it into your shell:
    ```bash
    cp deploy/ansible/.env.example deploy/ansible/.env
    # edit deploy/ansible/.env with real values
    set -a && source deploy/ansible/.env && set +a
    ```
-   The playbook reads these via `lookup('env', ...)` and refuses to run if `DB_PASSWORD` or `JWT_SECRET` are missing, rather than silently deploying with a placeholder secret.
+   `deploy/ansible/inventory.yml` and `playbook.yml` read these via `lookup('env', ...)`; the playbook refuses to run if `DB_PASSWORD` or `JWT_SECRET` are missing, rather than silently deploying with a placeholder secret.
 
 ### Deploying to Production (Default - Swagger disabled):
 ```bash
-ansible-playbook -i deploy/ansible/inventory.ini deploy/ansible/playbook.yml
+ansible-playbook -i deploy/ansible/inventory.yml deploy/ansible/playbook.yml
 ```
 
 ### Deploying to Development on Pi (Swagger enabled at `/docs`):
 ```bash
-ansible-playbook -i deploy/ansible/inventory.ini deploy/ansible/playbook.yml -e "env=development"
+ansible-playbook -i deploy/ansible/inventory.yml deploy/ansible/playbook.yml -e "env=development"
 ```
 
 ---
