@@ -15,7 +15,7 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@host.docker.internal:5432/${DB_NAME:-mindful_plate}
-      - JWT_SECRET=${JWT_SECRET:-mindful_plate_super_secret_jwt_key_raspberrypi_123!}
+      - JWT_SECRET=${JWT_SECRET:-mindful_plate_super_secret_jwt_key_prod_123!}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     ports:
       - "3000:3000"

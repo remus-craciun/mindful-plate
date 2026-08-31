@@ -14,7 +14,9 @@
     "db:generate": "bun --filter @mindful-plate/server db:generate",
     "db:migrate": "bun --filter @mindful-plate/server db:migrate",
     "db:push": "bun --filter @mindful-plate/server db:push",
-    "db:seed": "bun --filter @mindful-plate/server db:seed"
+    "db:seed": "bun --filter @mindful-plate/server db:seed",
+    "deploy": "bun deploy/scripts/deploy.ts deploy",
+    "deploy:revert": "bun deploy/scripts/deploy.ts revert"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

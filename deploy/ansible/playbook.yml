@@ -3,7 +3,7 @@
 # it as a container. Does not install or remove any software on the host —
 # Docker and Postgres are assumed to already be set up there.
 - name: Deploy Mindful Plate
-  hosts: raspberrypi
+  hosts: app_host
   vars:
     app_dir: "/home/{{ ansible_user }}/mindful-plate"
     image_name: mindful-plate
