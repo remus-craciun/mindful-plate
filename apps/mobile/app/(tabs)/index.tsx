@@ -115,11 +115,14 @@ export default function DashboardScreen() {
 
   const handleAddWater = async (amount: number) => {
     const previousMl = waterMl;
+    const previousLogs = waterLogs;
     setWaterMl((prev) => prev + amount);
     try {
-      await api.logWater(amount, selectedDate);
+      const res = await api.logWater(amount, selectedDate);
+      setWaterLogs((prev) => [...prev, res.log]);
     } catch (err: any) {
       setWaterMl(previousMl);
+      setWaterLogs(previousLogs);
       Alert.alert('Could not log water', err.message || 'Please try again.');
     }
   };
