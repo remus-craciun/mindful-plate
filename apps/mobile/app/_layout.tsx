@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, ActivityIndicator } from 'react-native';
 import React from 'react';
 
 const queryClient = new QueryClient({
@@ -47,6 +48,21 @@ export default function RootLayout() {
       router.replace('/(tabs)');
     }
   }, [token, isHydrated, segments]);
+
+  // Hold off mounting any route until the stored token (if any) has been
+  // loaded into src/services/api's in-memory authToken — otherwise a screen
+  // that fetches on mount (e.g. the home tab's useFocusEffect) can fire its
+  // first request before the Authorization header is set, and the server
+  // rejects it as unauthenticated.
+  if (!isHydrated) {
+    return (
+      <SafeAreaProvider>
+        <View className="flex-1 items-center justify-center bg-[#090d16]">
+          <ActivityIndicator color="#ffffff" />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
